@@ -1,7 +1,6 @@
 import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -15,39 +14,20 @@ export const customers = pgTable("customers", {
   responsible: text("responsible"),
 });
 
-export const customersRelations = relations(customers, ({ many }) => ({
-  phoneNumbers: many(phoneNumbers),
-  services: many(services),
-}));
-
 export const phoneNumbers = pgTable("phone_numbers", {
   id: serial("id").primaryKey(),
-  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  customerId: integer("customer_id").notNull(),
   number: text("number").notNull(),
   isPrimary: boolean("is_primary").default(false),
 });
 
-export const phoneNumbersRelations = relations(phoneNumbers, ({ one }) => ({
-  customer: one(customers, {
-    fields: [phoneNumbers.customerId],
-    references: [customers.id],
-  }),
-}));
-
 export const services = pgTable("services", {
   id: serial("id").primaryKey(), 
-  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  customerId: integer("customer_id").notNull(),
   name: text("name").notNull(),
   code: text("code").notNull(),
   notes: text("notes"),
 });
-
-export const servicesRelations = relations(services, ({ one }) => ({
-  customer: one(customers, {
-    fields: [services.customerId],
-    references: [customers.id],
-  }),
-}));
 
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({

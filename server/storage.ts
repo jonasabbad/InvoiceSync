@@ -1,5 +1,4 @@
 import { 
-  users, customers, phoneNumbers, services,
   type User, 
   type InsertUser, 
   type Customer, 
@@ -10,8 +9,6 @@ import {
   type InsertService,
   type CustomerWithDetails
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, ne, and, asc } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -43,199 +40,254 @@ export interface IStorage {
   deleteService(id: number): Promise<boolean>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class MemStorage implements IStorage {
+  private users: Map<number, User>;
+  private customers: Map<number, Customer>;
+  private phoneNumbers: Map<number, PhoneNumber>;
+  private services: Map<number, Service>;
+  
+  private userCurrentId: number;
+  private customerCurrentId: number;
+  private phoneNumberCurrentId: number;
+  private serviceCurrentId: number;
+
+  constructor() {
+    this.users = new Map();
+    this.customers = new Map();
+    this.phoneNumbers = new Map();
+    this.services = new Map();
+    
+    this.userCurrentId = 1;
+    this.customerCurrentId = 1;
+    this.phoneNumberCurrentId = 1;
+    this.serviceCurrentId = 1;
+
+    // Add some initial data for testing
+    this.initializeTestData();
+  }
+
+  private initializeTestData() {
+    // Add a sample customer
+    const customer: Customer = {
+      id: this.customerCurrentId++,
+      name: "Ahmed Mohammed",
+      responsible: "Mohammed Ahmed"
+    };
+    this.customers.set(customer.id, customer);
+
+    // Add phone numbers for the customer
+    this.phoneNumbers.set(this.phoneNumberCurrentId, {
+      id: this.phoneNumberCurrentId++,
+      customerId: customer.id,
+      number: "+966 54 123 4567",
+      isPrimary: true
+    });
+    
+    this.phoneNumbers.set(this.phoneNumberCurrentId, {
+      id: this.phoneNumberCurrentId++,
+      customerId: customer.id,
+      number: "+966 50 765 4321",
+      isPrimary: false
+    });
+
+    // Add services for the customer
+    this.services.set(this.serviceCurrentId, {
+      id: this.serviceCurrentId++,
+      customerId: customer.id,
+      name: "Electricity",
+      code: "ELEC-1001-A",
+      notes: "Main building"
+    });
+    
+    this.services.set(this.serviceCurrentId, {
+      id: this.serviceCurrentId++,
+      customerId: customer.id,
+      name: "Water",
+      code: "WATER-455-B",
+      notes: "Monthly service"
+    });
+    
+    this.services.set(this.serviceCurrentId, {
+      id: this.serviceCurrentId++,
+      customerId: customer.id,
+      name: "Internet",
+      code: "NET-789-C",
+      notes: "Fiber optic"
+    });
+  }
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id));
-    return result[0];
+    return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
-    return result[0];
+    return Array.from(this.users.values()).find(
+      (user) => user.username === username,
+    );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+    const id = this.userCurrentId++;
+    const user: User = { ...insertUser, id };
+    this.users.set(id, user);
+    return user;
   }
 
   // Customer methods
   async getCustomers(): Promise<Customer[]> {
-    return db.select().from(customers).orderBy(asc(customers.name));
+    return Array.from(this.customers.values());
   }
 
   async getCustomer(id: number): Promise<Customer | undefined> {
-    const result = await db.select().from(customers).where(eq(customers.id, id));
-    return result[0];
+    return this.customers.get(id);
   }
 
   async getCustomerByPhone(phoneNumber: string): Promise<Customer | undefined> {
-    // Normalize the phone number by removing spaces for comparison
-    const normalizedPhone = phoneNumber.replace(/\s+/g, '');
-    
-    // First find the matching phone number
-    const phones = await db.select().from(phoneNumbers);
-    const matchingPhone = phones.find(phone => 
-      phone.number.replace(/\s+/g, '') === normalizedPhone
+    const phone = Array.from(this.phoneNumbers.values()).find(
+      (phone) => phone.number.replace(/\s+/g, '') === phoneNumber.replace(/\s+/g, '')
     );
     
-    if (!matchingPhone) return undefined;
+    if (!phone) return undefined;
     
-    // Then get the customer
-    const result = await db.select().from(customers).where(eq(customers.id, matchingPhone.customerId));
-    return result[0];
+    return this.customers.get(phone.customerId);
   }
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
-    const result = await db.insert(customers).values(insertCustomer).returning();
-    return result[0];
+    const id = this.customerCurrentId++;
+    const customer: Customer = { ...insertCustomer, id };
+    this.customers.set(id, customer);
+    return customer;
   }
 
   async updateCustomer(id: number, customerUpdate: Partial<InsertCustomer>): Promise<Customer | undefined> {
-    const result = await db
-      .update(customers)
-      .set(customerUpdate)
-      .where(eq(customers.id, id))
-      .returning();
-    return result[0];
+    const customer = this.customers.get(id);
+    if (!customer) return undefined;
+    
+    const updatedCustomer: Customer = { ...customer, ...customerUpdate };
+    this.customers.set(id, updatedCustomer);
+    return updatedCustomer;
   }
 
   async deleteCustomer(id: number): Promise<boolean> {
-    // Due to cascading deletes defined in the schema, related phone numbers and services will be automatically deleted
-    const result = await db.delete(customers).where(eq(customers.id, id)).returning();
-    return result.length > 0;
+    // Delete all related phone numbers and services
+    const phoneNumbersToDelete = Array.from(this.phoneNumbers.values())
+      .filter(phone => phone.customerId === id);
+    
+    for (const phone of phoneNumbersToDelete) {
+      this.phoneNumbers.delete(phone.id);
+    }
+    
+    const servicesToDelete = Array.from(this.services.values())
+      .filter(service => service.customerId === id);
+    
+    for (const service of servicesToDelete) {
+      this.services.delete(service.id);
+    }
+    
+    return this.customers.delete(id);
   }
 
   async getCustomerWithDetails(id: number): Promise<CustomerWithDetails | undefined> {
-    const customer = await this.getCustomer(id);
+    const customer = this.customers.get(id);
     if (!customer) return undefined;
     
-    const customerPhones = await this.getPhoneNumbers(id);
-    const customerServices = await this.getServices(id);
+    const phoneNumbers = Array.from(this.phoneNumbers.values())
+      .filter(phone => phone.customerId === id);
+    
+    const services = Array.from(this.services.values())
+      .filter(service => service.customerId === id);
     
     return {
       ...customer,
-      phoneNumbers: customerPhones,
-      services: customerServices
+      phoneNumbers,
+      services
     };
   }
 
   // Phone number methods
   async getPhoneNumbers(customerId: number): Promise<PhoneNumber[]> {
-    return db
-      .select()
-      .from(phoneNumbers)
-      .where(eq(phoneNumbers.customerId, customerId));
+    return Array.from(this.phoneNumbers.values())
+      .filter(phone => phone.customerId === customerId);
   }
 
   async createPhoneNumber(insertPhoneNumber: InsertPhoneNumber): Promise<PhoneNumber> {
     // If this is the primary phone, update all other phones to non-primary
     if (insertPhoneNumber.isPrimary) {
-      await db
-        .update(phoneNumbers)
-        .set({ isPrimary: false })
-        .where(
-          and(
-            eq(phoneNumbers.customerId, insertPhoneNumber.customerId),
-            eq(phoneNumbers.isPrimary, true)
-          )
-        );
+      for (const [id, phone] of this.phoneNumbers.entries()) {
+        if (phone.customerId === insertPhoneNumber.customerId && phone.isPrimary) {
+          this.phoneNumbers.set(id, { ...phone, isPrimary: false });
+        }
+      }
     }
     
-    const result = await db.insert(phoneNumbers).values(insertPhoneNumber).returning();
-    return result[0];
+    const id = this.phoneNumberCurrentId++;
+    const phoneNumber: PhoneNumber = { ...insertPhoneNumber, id };
+    this.phoneNumbers.set(id, phoneNumber);
+    return phoneNumber;
   }
 
   async updatePhoneNumber(id: number, phoneNumberUpdate: Partial<InsertPhoneNumber>): Promise<PhoneNumber | undefined> {
-    // Get the current phone to check if we're updating a primary phone
-    const currentPhones = await db.select().from(phoneNumbers).where(eq(phoneNumbers.id, id));
-    const currentPhone = currentPhones[0];
-    
-    if (!currentPhone) return undefined;
+    const phoneNumber = this.phoneNumbers.get(id);
+    if (!phoneNumber) return undefined;
     
     // If updating to primary, update all other phones to non-primary
     if (phoneNumberUpdate.isPrimary) {
-      await db
-        .update(phoneNumbers)
-        .set({ isPrimary: false })
-        .where(
-          and(
-            eq(phoneNumbers.customerId, currentPhone.customerId),
-            eq(phoneNumbers.isPrimary, true),
-            //We don't want to update the current phone yet
-            ne(phoneNumbers.id, id)
-          )
-        );
+      for (const [phoneId, phone] of this.phoneNumbers.entries()) {
+        if (phone.customerId === phoneNumber.customerId && phone.isPrimary && phoneId !== id) {
+          this.phoneNumbers.set(phoneId, { ...phone, isPrimary: false });
+        }
+      }
     }
     
-    const result = await db
-      .update(phoneNumbers)
-      .set(phoneNumberUpdate)
-      .where(eq(phoneNumbers.id, id))
-      .returning();
-    
-    return result[0];
+    const updatedPhoneNumber: PhoneNumber = { ...phoneNumber, ...phoneNumberUpdate };
+    this.phoneNumbers.set(id, updatedPhoneNumber);
+    return updatedPhoneNumber;
   }
 
   async deletePhoneNumber(id: number): Promise<boolean> {
-    // Get the phone number before deleting
-    const currentPhones = await db.select().from(phoneNumbers).where(eq(phoneNumbers.id, id));
-    const phoneNumber = currentPhones[0];
-    
+    const phoneNumber = this.phoneNumbers.get(id);
     if (!phoneNumber) return false;
     
     // If deleting a primary phone, set another phone as primary if exists
     if (phoneNumber.isPrimary) {
-      const otherPhones = await db
-        .select()
-        .from(phoneNumbers)
-        .where(
-          and(
-            eq(phoneNumbers.customerId, phoneNumber.customerId),
-            ne(phoneNumbers.id, id)
-          )
-        );
+      const otherPhones = Array.from(this.phoneNumbers.values())
+        .filter(phone => phone.customerId === phoneNumber.customerId && phone.id !== id);
       
       if (otherPhones.length > 0) {
-        await db
-          .update(phoneNumbers)
-          .set({ isPrimary: true })
-          .where(eq(phoneNumbers.id, otherPhones[0].id));
+        const newPrimaryPhone = otherPhones[0];
+        this.phoneNumbers.set(newPrimaryPhone.id, { ...newPrimaryPhone, isPrimary: true });
       }
     }
     
-    const result = await db.delete(phoneNumbers).where(eq(phoneNumbers.id, id)).returning();
-    return result.length > 0;
+    return this.phoneNumbers.delete(id);
   }
 
   // Service methods
   async getServices(customerId: number): Promise<Service[]> {
-    return db
-      .select()
-      .from(services)
-      .where(eq(services.customerId, customerId));
+    return Array.from(this.services.values())
+      .filter(service => service.customerId === customerId);
   }
 
   async createService(insertService: InsertService): Promise<Service> {
-    const result = await db.insert(services).values(insertService).returning();
-    return result[0];
+    const id = this.serviceCurrentId++;
+    const service: Service = { ...insertService, id };
+    this.services.set(id, service);
+    return service;
   }
 
   async updateService(id: number, serviceUpdate: Partial<InsertService>): Promise<Service | undefined> {
-    const result = await db
-      .update(services)
-      .set(serviceUpdate)
-      .where(eq(services.id, id))
-      .returning();
+    const service = this.services.get(id);
+    if (!service) return undefined;
     
-    return result[0];
+    const updatedService: Service = { ...service, ...serviceUpdate };
+    this.services.set(id, updatedService);
+    return updatedService;
   }
 
   async deleteService(id: number): Promise<boolean> {
-    const result = await db.delete(services).where(eq(services.id, id)).returning();
-    return result.length > 0;
+    return this.services.delete(id);
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
