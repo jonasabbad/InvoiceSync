@@ -19,14 +19,23 @@ export default function Home() {
   const queryClient = useQueryClient();
 
   // Fetch customers for dropdown
-  const { data: customers, isLoading: isLoadingCustomers } = useQuery({
+  const { data: customers, isLoading: isLoadingCustomers } = useQuery<any[]>({
     queryKey: ["/api/customers"],
+    initialData: [],
   });
 
   // Fetch selected customer details
   const { data: selectedCustomer, isLoading: isLoadingSelectedCustomer } = useQuery<CustomerWithDetails>({
     queryKey: ["/api/customers", selectedCustomerId],
     enabled: !!selectedCustomerId,
+    // Provide an empty array for phoneNumbers and services to prevent null/undefined errors
+    select: (data) => {
+      return {
+        ...data,
+        phoneNumbers: data.phoneNumbers || [],
+        services: data.services || []
+      };
+    }
   });
 
   const handleCustomerSelect = (customerId: number | null) => {

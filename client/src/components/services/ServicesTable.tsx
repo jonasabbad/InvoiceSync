@@ -85,7 +85,7 @@ export default function ServicesTable({
       
       <CardContent className="px-6 py-5">
         <div className="overflow-x-auto">
-          {services.length === 0 ? (
+          {(!services || services.length === 0) ? (
             <div className="p-8 text-center">
               <svg 
                 className="mx-auto h-12 w-12 text-gray-400" 

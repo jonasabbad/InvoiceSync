@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CustomerSearchProps {
-  customers?: any[];
+  customers: any[];
   isLoading: boolean;
   onCustomerSelect: (customerId: number | null) => void;
   onCustomerSearch: (customer: CustomerWithDetails | null) => void;
@@ -65,7 +65,14 @@ export default function CustomerSearch({
       const response = await apiRequest("GET", `/api/customers/search/${query}`, undefined);
       const customer = await response.json();
       
-      onCustomerSearch(customer);
+      // Ensure phoneNumbers and services are initialized
+      const completeCustomer = {
+        ...customer,
+        phoneNumbers: customer.phoneNumbers || [],
+        services: customer.services || []
+      };
+      
+      onCustomerSearch(completeCustomer);
       toast({
         title: "Customer Found",
         description: `Found customer: ${customer.name}`,

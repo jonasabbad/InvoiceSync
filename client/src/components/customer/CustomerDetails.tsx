@@ -149,7 +149,7 @@ export default function CustomerDetails({
               </Button>
             </div>
             
-            {customer.phoneNumbers.length === 0 ? (
+            {(!customer.phoneNumbers || customer.phoneNumbers.length === 0) ? (
               <div className="p-4 text-center bg-slate-50 rounded-md">
                 <p className="text-sm text-slate-500">No phone numbers added yet.</p>
               </div>
