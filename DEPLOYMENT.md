@@ -56,14 +56,15 @@ git push -u origin main
 
 1. Go to https://vercel.com/new
 2. Import your GitHub repository
-3. Configure the project:
-   - Framework Preset: Other
+3. The project should be configured automatically through the vercel.json file with:
    - Build Command: `npm run build`
    - Output Directory: `dist`
    - Install Command: `npm install`
 4. Add Environment Variables (optional):
    - NODE_ENV: production
 5. Click "Deploy"
+
+Note: The repository already includes a vercel.json configuration file that handles all the necessary settings for deployment.
 
 ### Deploy with Vercel CLI (Alternative)
 
