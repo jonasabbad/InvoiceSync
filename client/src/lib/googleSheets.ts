@@ -9,10 +9,23 @@ import {
   InsertService,
 } from "@shared/schema";
 
-// The URL of your published Google Apps Script web app
-// You'll need to replace this with your actual web app URL after deploying your Apps Script
-const GOOGLE_APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyqkAIKPwf5-aQVWDI9SyxCyM7lvZ90wf4ccu2fq7WsQ8Kq-GiwHMuQa3GC8iPX9NYzOA/exec"; // Replace with your deployed Google Apps Script URL
+// Key for storing the Google Apps Script URL in local storage
+const GOOGLE_APPS_SCRIPT_URL_KEY = 'googleAppsScriptUrl';
+
+// Get the URL from localStorage or fallback to empty string
+const getGoogleAppsScriptUrl = (): string => {
+  return localStorage.getItem(GOOGLE_APPS_SCRIPT_URL_KEY) || "";
+};
+
+// Set the Google Apps Script URL in localStorage
+export const setGoogleAppsScriptUrl = (url: string): void => {
+  localStorage.setItem(GOOGLE_APPS_SCRIPT_URL_KEY, url);
+};
+
+// Check if the Google Sheets integration is configured
+export const isGoogleSheetsConfigured = (): boolean => {
+  return !!getGoogleAppsScriptUrl();
+};
 
 /**
  * Syncs data with Google Sheets
@@ -29,8 +42,12 @@ export async function syncWithGoogleSheets(): Promise<{
   } catch (error) {
     // If the Express backend fails, try direct Google Apps Script API
     try {
-      const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getCustomers`;
-      const response = await fetch(url);
+      const url = getGoogleAppsScriptUrl();
+      if (!url) {
+        throw new Error("Google Sheets URL not configured");
+      }
+      
+      const response = await fetch(`${url}?action=getCustomers`);
       const data = await response.json();
       return {
         synced: true,
@@ -48,7 +65,12 @@ export async function syncWithGoogleSheets(): Promise<{
  * @returns Promise with customers data
  */
 export async function getGoogleSheetsCustomers(): Promise<Customer[]> {
-  const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getCustomers`;
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const url = `${scriptUrl}?action=getCustomers`;
   const response = await fetch(url);
   const data = await response.json();
   return data.customers || [];
@@ -62,7 +84,12 @@ export async function getGoogleSheetsCustomers(): Promise<Customer[]> {
 export async function getGoogleSheetsCustomerById(
   id: number,
 ): Promise<CustomerWithDetails | null> {
-  const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getCustomerById&id=${id}`;
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const url = `${scriptUrl}?action=getCustomerById&id=${id}`;
   const response = await fetch(url);
   const data = await response.json();
   return data.customer || null;
@@ -76,7 +103,12 @@ export async function getGoogleSheetsCustomerById(
 export async function searchGoogleSheetsCustomer(
   query: string,
 ): Promise<CustomerWithDetails | null> {
-  const url = `${GOOGLE_APPS_SCRIPT_URL}?action=searchCustomer&query=${encodeURIComponent(query)}`;
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const url = `${scriptUrl}?action=searchCustomer&query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
   const data = await response.json();
   return data.customer || null;
@@ -90,8 +122,12 @@ export async function searchGoogleSheetsCustomer(
 export async function addGoogleSheetsCustomer(
   customer: InsertCustomer,
 ): Promise<Customer> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "addCustomer",
@@ -112,8 +148,12 @@ export async function updateGoogleSheetsCustomer(
   id: number,
   customer: Partial<InsertCustomer>,
 ): Promise<Customer> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "updateCustomer",
@@ -133,8 +173,12 @@ export async function updateGoogleSheetsCustomer(
 export async function deleteGoogleSheetsCustomer(
   id: number,
 ): Promise<{ success: boolean }> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "deleteCustomer",
@@ -153,7 +197,12 @@ export async function deleteGoogleSheetsCustomer(
 export async function getGoogleSheetsPhones(
   customerId: number,
 ): Promise<PhoneNumber[]> {
-  const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getPhones&customerId=${customerId}`;
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const url = `${scriptUrl}?action=getPhones&customerId=${customerId}`;
   const response = await fetch(url);
   const data = await response.json();
   return data.phoneNumbers || [];
@@ -167,8 +216,12 @@ export async function getGoogleSheetsPhones(
 export async function addGoogleSheetsPhone(
   phone: InsertPhoneNumber,
 ): Promise<PhoneNumber> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "addPhone",
@@ -189,8 +242,12 @@ export async function updateGoogleSheetsPhone(
   id: number,
   phone: Partial<InsertPhoneNumber>,
 ): Promise<PhoneNumber> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "updatePhone",
@@ -210,8 +267,12 @@ export async function updateGoogleSheetsPhone(
 export async function deleteGoogleSheetsPhone(
   id: number,
 ): Promise<{ success: boolean }> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "deletePhone",
@@ -230,7 +291,12 @@ export async function deleteGoogleSheetsPhone(
 export async function getGoogleSheetsServices(
   customerId: number,
 ): Promise<Service[]> {
-  const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getServices&customerId=${customerId}`;
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const url = `${scriptUrl}?action=getServices&customerId=${customerId}`;
   const response = await fetch(url);
   const data = await response.json();
   return data.services || [];
@@ -244,8 +310,12 @@ export async function getGoogleSheetsServices(
 export async function addGoogleSheetsService(
   service: InsertService,
 ): Promise<Service> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "addService",
@@ -266,8 +336,12 @@ export async function updateGoogleSheetsService(
   id: number,
   service: Partial<InsertService>,
 ): Promise<Service> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "updateService",
@@ -287,8 +361,12 @@ export async function updateGoogleSheetsService(
 export async function deleteGoogleSheetsService(
   id: number,
 ): Promise<{ success: boolean }> {
-  const url = GOOGLE_APPS_SCRIPT_URL;
-  const response = await fetch(url, {
+  const scriptUrl = getGoogleAppsScriptUrl();
+  if (!scriptUrl) {
+    throw new Error("Google Sheets URL not configured");
+  }
+  
+  const response = await fetch(scriptUrl, {
     method: "POST",
     body: JSON.stringify({
       action: "deleteService",

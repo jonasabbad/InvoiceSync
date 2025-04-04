@@ -6,30 +6,26 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Key for storing the Google Apps Script URL in local storage
-const GOOGLE_APPS_SCRIPT_URL_KEY = 'googleAppsScriptUrl';
+import { setGoogleAppsScriptUrl, isGoogleSheetsConfigured } from "@/lib/googleSheets";
 
 export default function GoogleSheetsSettings() {
-  const [googleAppsScriptUrl, setGoogleAppsScriptUrl] = useState('');
+  const [url, setUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [tab, setTab] = useState('settings');
   const { toast } = useToast();
 
   // Load saved URL from local storage on component mount
   useEffect(() => {
-    const savedUrl = localStorage.getItem(GOOGLE_APPS_SCRIPT_URL_KEY);
+    // Get the URL from localStorage
+    const savedUrl = localStorage.getItem('googleAppsScriptUrl') || '';
     if (savedUrl) {
-      setGoogleAppsScriptUrl(savedUrl);
+      setUrl(savedUrl);
     }
   }, []);
 
   const handleSave = () => {
-    // Save URL to local storage
-    localStorage.setItem(GOOGLE_APPS_SCRIPT_URL_KEY, googleAppsScriptUrl);
-    
-    // Update our integration
-    window.location.reload(); // Reload the page to apply the new URL
+    // Save URL using our function
+    setGoogleAppsScriptUrl(url);
     
     toast({
       title: "Settings Saved",
@@ -62,8 +58,8 @@ export default function GoogleSheetsSettings() {
                 <Input
                   id="google-apps-script-url"
                   placeholder="https://script.google.com/macros/s/..."
-                  value={googleAppsScriptUrl}
-                  onChange={(e) => setGoogleAppsScriptUrl(e.target.value)}
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
                   disabled={!isEditing}
                 />
                 <p className="text-sm text-slate-500">
@@ -71,7 +67,7 @@ export default function GoogleSheetsSettings() {
                 </p>
               </div>
               
-              {googleAppsScriptUrl && !isEditing && (
+              {url && !isEditing && (
                 <Alert className="bg-green-50 border-green-300">
                   <AlertTitle>Connection Configured</AlertTitle>
                   <AlertDescription>
@@ -80,7 +76,7 @@ export default function GoogleSheetsSettings() {
                 </Alert>
               )}
               
-              {!googleAppsScriptUrl && (
+              {!url && (
                 <Alert className="bg-amber-50 border-amber-300">
                   <AlertTitle>Setup Required</AlertTitle>
                   <AlertDescription>

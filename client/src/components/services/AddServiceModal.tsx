@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { isGoogleSheetsConfigured } from "@/lib/googleSheets";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Link } from "wouter";
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -28,8 +31,14 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function AddServiceModal({ isOpen, onClose, customerId }: AddServiceModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sheetsConfigured, setSheetsConfigured] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Check if Google Sheets is configured
+  useEffect(() => {
+    setSheetsConfigured(isGoogleSheetsConfigured());
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -87,6 +96,18 @@ export default function AddServiceModal({ isOpen, onClose, customerId }: AddServ
         <DialogHeader>
           <DialogTitle>Add New Service</DialogTitle>
         </DialogHeader>
+        
+        {!sheetsConfigured && (
+          <Alert className="mb-4 bg-amber-50 border-amber-300">
+            <AlertTitle>Google Sheets Not Configured</AlertTitle>
+            <AlertDescription>
+              Your Google Sheets integration is not set up. Service data will only be saved locally. 
+              <Link to="/settings" className="text-blue-500 hover:underline ml-1">
+                Configure Google Sheets
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
