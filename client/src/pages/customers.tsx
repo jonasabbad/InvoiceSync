@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import CustomerSearch from "@/components/customer/CustomerSearch";
 import CustomerDetails from "@/components/customer/CustomerDetails";
 import ServicesTable from "@/components/services/ServicesTable";
@@ -17,6 +18,17 @@ export default function Customers() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [location] = useLocation();
+  
+  // Check for customer ID in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerId = urlParams.get('id');
+    
+    if (customerId) {
+      setSelectedCustomerId(parseInt(customerId, 10));
+    }
+  }, [location]);
 
   // Fetch customers for dropdown
   const { data: customers, isLoading: isLoadingCustomers } = useQuery<any[]>({

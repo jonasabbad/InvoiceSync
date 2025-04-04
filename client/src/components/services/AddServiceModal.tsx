@@ -80,7 +80,9 @@ export default function AddServiceModal({ isOpen, onClose, customerId }: AddServ
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add New Service</DialogTitle>
