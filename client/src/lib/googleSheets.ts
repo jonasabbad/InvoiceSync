@@ -1,9 +1,18 @@
 import { apiRequest } from "./queryClient";
-import { CustomerWithDetails, InsertCustomer, Customer, PhoneNumber, InsertPhoneNumber, Service, InsertService } from "@shared/schema";
+import {
+  CustomerWithDetails,
+  InsertCustomer,
+  Customer,
+  PhoneNumber,
+  InsertPhoneNumber,
+  Service,
+  InsertService,
+} from "@shared/schema";
 
 // The URL of your published Google Apps Script web app
 // You'll need to replace this with your actual web app URL after deploying your Apps Script
-const GOOGLE_APPS_SCRIPT_URL = ''; // Replace with your deployed Google Apps Script URL
+const GOOGLE_APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbyqkAIKPwf5-aQVWDI9SyxCyM7lvZ90wf4ccu2fq7WsQ8Kq-GiwHMuQa3GC8iPX9NYzOA/exec"; // Replace with your deployed Google Apps Script URL
 
 /**
  * Syncs data with Google Sheets
@@ -25,11 +34,11 @@ export async function syncWithGoogleSheets(): Promise<{
       const data = await response.json();
       return {
         synced: true,
-        data: data.customers
+        data: data.customers,
       };
     } catch (googleError) {
-      console.error('Failed to sync with Google Sheets:', googleError);
-      throw new Error('Failed to sync with Google Sheets');
+      console.error("Failed to sync with Google Sheets:", googleError);
+      throw new Error("Failed to sync with Google Sheets");
     }
   }
 }
@@ -50,7 +59,9 @@ export async function getGoogleSheetsCustomers(): Promise<Customer[]> {
  * @param id Customer ID
  * @returns Promise with customer data
  */
-export async function getGoogleSheetsCustomerById(id: number): Promise<CustomerWithDetails | null> {
+export async function getGoogleSheetsCustomerById(
+  id: number,
+): Promise<CustomerWithDetails | null> {
   const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getCustomerById&id=${id}`;
   const response = await fetch(url);
   const data = await response.json();
@@ -62,7 +73,9 @@ export async function getGoogleSheetsCustomerById(id: number): Promise<CustomerW
  * @param query Search query (ID or phone number)
  * @returns Promise with customer data
  */
-export async function searchGoogleSheetsCustomer(query: string): Promise<CustomerWithDetails | null> {
+export async function searchGoogleSheetsCustomer(
+  query: string,
+): Promise<CustomerWithDetails | null> {
   const url = `${GOOGLE_APPS_SCRIPT_URL}?action=searchCustomer&query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
   const data = await response.json();
@@ -74,14 +87,16 @@ export async function searchGoogleSheetsCustomer(query: string): Promise<Custome
  * @param customer Customer data to add
  * @returns Promise with added customer data
  */
-export async function addGoogleSheetsCustomer(customer: InsertCustomer): Promise<Customer> {
+export async function addGoogleSheetsCustomer(
+  customer: InsertCustomer,
+): Promise<Customer> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'addCustomer',
-      customer
-    })
+      action: "addCustomer",
+      customer,
+    }),
   });
   const data = await response.json();
   return data.customer;
@@ -93,15 +108,18 @@ export async function addGoogleSheetsCustomer(customer: InsertCustomer): Promise
  * @param customer Updated customer data
  * @returns Promise with updated customer data
  */
-export async function updateGoogleSheetsCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer> {
+export async function updateGoogleSheetsCustomer(
+  id: number,
+  customer: Partial<InsertCustomer>,
+): Promise<Customer> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'updateCustomer',
+      action: "updateCustomer",
       id,
-      customer
-    })
+      customer,
+    }),
   });
   const data = await response.json();
   return data.customer;
@@ -112,14 +130,16 @@ export async function updateGoogleSheetsCustomer(id: number, customer: Partial<I
  * @param id Customer ID
  * @returns Promise with success message
  */
-export async function deleteGoogleSheetsCustomer(id: number): Promise<{ success: boolean }> {
+export async function deleteGoogleSheetsCustomer(
+  id: number,
+): Promise<{ success: boolean }> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'deleteCustomer',
-      id
-    })
+      action: "deleteCustomer",
+      id,
+    }),
   });
   const data = await response.json();
   return { success: data.success || false };
@@ -130,7 +150,9 @@ export async function deleteGoogleSheetsCustomer(id: number): Promise<{ success:
  * @param customerId Customer ID
  * @returns Promise with phone numbers data
  */
-export async function getGoogleSheetsPhones(customerId: number): Promise<PhoneNumber[]> {
+export async function getGoogleSheetsPhones(
+  customerId: number,
+): Promise<PhoneNumber[]> {
   const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getPhones&customerId=${customerId}`;
   const response = await fetch(url);
   const data = await response.json();
@@ -142,14 +164,16 @@ export async function getGoogleSheetsPhones(customerId: number): Promise<PhoneNu
  * @param phone Phone number data to add
  * @returns Promise with added phone number data
  */
-export async function addGoogleSheetsPhone(phone: InsertPhoneNumber): Promise<PhoneNumber> {
+export async function addGoogleSheetsPhone(
+  phone: InsertPhoneNumber,
+): Promise<PhoneNumber> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'addPhone',
-      phone
-    })
+      action: "addPhone",
+      phone,
+    }),
   });
   const data = await response.json();
   return data.phone;
@@ -161,15 +185,18 @@ export async function addGoogleSheetsPhone(phone: InsertPhoneNumber): Promise<Ph
  * @param phone Updated phone number data
  * @returns Promise with updated phone number data
  */
-export async function updateGoogleSheetsPhone(id: number, phone: Partial<InsertPhoneNumber>): Promise<PhoneNumber> {
+export async function updateGoogleSheetsPhone(
+  id: number,
+  phone: Partial<InsertPhoneNumber>,
+): Promise<PhoneNumber> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'updatePhone',
+      action: "updatePhone",
       id,
-      phone
-    })
+      phone,
+    }),
   });
   const data = await response.json();
   return data.phone;
@@ -180,14 +207,16 @@ export async function updateGoogleSheetsPhone(id: number, phone: Partial<InsertP
  * @param id Phone number ID
  * @returns Promise with success message
  */
-export async function deleteGoogleSheetsPhone(id: number): Promise<{ success: boolean }> {
+export async function deleteGoogleSheetsPhone(
+  id: number,
+): Promise<{ success: boolean }> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'deletePhone',
-      id
-    })
+      action: "deletePhone",
+      id,
+    }),
   });
   const data = await response.json();
   return { success: data.success || false };
@@ -198,7 +227,9 @@ export async function deleteGoogleSheetsPhone(id: number): Promise<{ success: bo
  * @param customerId Customer ID
  * @returns Promise with services data
  */
-export async function getGoogleSheetsServices(customerId: number): Promise<Service[]> {
+export async function getGoogleSheetsServices(
+  customerId: number,
+): Promise<Service[]> {
   const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getServices&customerId=${customerId}`;
   const response = await fetch(url);
   const data = await response.json();
@@ -210,14 +241,16 @@ export async function getGoogleSheetsServices(customerId: number): Promise<Servi
  * @param service Service data to add
  * @returns Promise with added service data
  */
-export async function addGoogleSheetsService(service: InsertService): Promise<Service> {
+export async function addGoogleSheetsService(
+  service: InsertService,
+): Promise<Service> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'addService',
-      service
-    })
+      action: "addService",
+      service,
+    }),
   });
   const data = await response.json();
   return data.service;
@@ -229,15 +262,18 @@ export async function addGoogleSheetsService(service: InsertService): Promise<Se
  * @param service Updated service data
  * @returns Promise with updated service data
  */
-export async function updateGoogleSheetsService(id: number, service: Partial<InsertService>): Promise<Service> {
+export async function updateGoogleSheetsService(
+  id: number,
+  service: Partial<InsertService>,
+): Promise<Service> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'updateService',
+      action: "updateService",
       id,
-      service
-    })
+      service,
+    }),
   });
   const data = await response.json();
   return data.service;
@@ -248,14 +284,16 @@ export async function updateGoogleSheetsService(id: number, service: Partial<Ins
  * @param id Service ID
  * @returns Promise with success message
  */
-export async function deleteGoogleSheetsService(id: number): Promise<{ success: boolean }> {
+export async function deleteGoogleSheetsService(
+  id: number,
+): Promise<{ success: boolean }> {
   const url = GOOGLE_APPS_SCRIPT_URL;
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
-      action: 'deleteService',
-      id
-    })
+      action: "deleteService",
+      id,
+    }),
   });
   const data = await response.json();
   return { success: data.success || false };
