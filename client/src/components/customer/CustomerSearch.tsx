@@ -4,7 +4,13 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CustomerSearchProps {
@@ -20,7 +26,7 @@ export default function CustomerSearch({
   isLoading,
   onCustomerSelect,
   onCustomerSearch,
-  onSyncDatabase
+  onSyncDatabase,
 }: CustomerSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -30,17 +36,17 @@ export default function CustomerSearch({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    
+
     // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     // If search query is empty, don't search
     if (!query.trim()) {
       return;
     }
-    
+
     // Search after a short delay
     searchTimeoutRef.current = setTimeout(async () => {
       await searchCustomer(query);
@@ -59,12 +65,16 @@ export default function CustomerSearch({
 
   const searchCustomer = async (query: string) => {
     if (!query.trim()) return;
-    
+
     setIsSearching(true);
     try {
-      const response = await apiRequest("GET", `/api/customers/search/${query}`, undefined);
+      const response = await apiRequest(
+        "GET",
+        `/api/customers/search/${query}`,
+        undefined,
+      );
       const customer = await response.json();
-      
+
       onCustomerSearch(customer);
       toast({
         title: "Customer Found",
@@ -87,10 +97,24 @@ export default function CustomerSearch({
     <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
       <div className="grid md:grid-cols-12 gap-6">
         <div className="md:col-span-5">
-          <label htmlFor="search" className="block text-sm font-medium text-slate-700">Search Customer</label>
+          <label
+            htmlFor="search"
+            className="block text-sm font-medium text-slate-700"
+          >
+            Search Customer
+          </label>
           <div className="mt-1 relative rounded-md shadow-sm">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className="h-4 w-4 text-slate-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -107,13 +131,21 @@ export default function CustomerSearch({
             />
           </div>
         </div>
-        
+
         <div className="md:col-span-5">
-          <label htmlFor="customer-select" className="block text-sm font-medium text-slate-700">Select Customer</label>
+          <label
+            htmlFor="customer-select"
+            className="block text-sm font-medium text-slate-700"
+          >
+            Select Customer
+          </label>
           {isLoading ? (
             <Skeleton className="h-10 w-full mt-1" />
           ) : (
-            <Select onValueChange={handleSelectChange} defaultValue="placeholder">
+            <Select
+              onValueChange={handleSelectChange}
+              defaultValue="placeholder"
+            >
               <SelectTrigger className="w-full mt-1">
                 <SelectValue placeholder="Select a customer" />
               </SelectTrigger>
@@ -128,14 +160,19 @@ export default function CustomerSearch({
             </Select>
           )}
         </div>
-        
+
         <div className="md:col-span-2 flex items-end">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={onSyncDatabase}
-          >
-            <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <Button variant="outline" className="w-full" onClick={onSyncDatabase}>
+            <svg
+              className="h-4 w-4 mr-2"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38" />
             </svg>
             Sync
