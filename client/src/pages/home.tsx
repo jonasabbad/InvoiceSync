@@ -1,204 +1,156 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import CustomerSearch from "@/components/customer/CustomerSearch";
-import CustomerDetails from "@/components/customer/CustomerDetails";
-import ServicesTable from "@/components/services/ServicesTable";
-import AddCustomerModal from "@/components/customer/AddCustomerModal";
-import AddPhoneModal from "@/components/customer/AddPhoneModal";
-import AddServiceModal from "@/components/services/AddServiceModal";
-import { CustomerWithDetails } from "@shared/schema";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { CustomerWithDetails } from "@shared/schema";
 
 export default function Home() {
-  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
-  const [isAddPhoneModalOpen, setIsAddPhoneModalOpen] = useState(false);
-  const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // Fetch customers for dropdown
+  // Fetch customers for statistics
   const { data: customers, isLoading: isLoadingCustomers } = useQuery<any[]>({
     queryKey: ["/api/customers"],
     initialData: [],
   });
 
-  // Fetch selected customer details
-  const { data: selectedCustomer, isLoading: isLoadingSelectedCustomer } = useQuery<CustomerWithDetails>({
-    queryKey: ["/api/customers", selectedCustomerId],
-    enabled: !!selectedCustomerId,
-    // Provide an empty array for phoneNumbers and services to prevent null/undefined errors
-    select: (data) => {
-      return {
-        ...data,
-        phoneNumbers: data.phoneNumbers || [],
-        services: data.services || []
-      };
-    }
-  });
+  // Create statistics from data
+  const totalCustomers = customers?.length || 0;
+  const totalServices = customers?.reduce((total, customer) => {
+    return total + (customer.services?.length || 0);
+  }, 0) || 0;
 
-  const handleCustomerSelect = (customerId: number | null) => {
-    setSelectedCustomerId(customerId);
-  };
-
-  const handleCustomerSearch = (customer: CustomerWithDetails | null) => {
-    if (customer) {
-      // Set the selected customer
-      setSelectedCustomerId(customer.id);
-      // Update the cache with the search result
-      queryClient.setQueryData(["/api/customers", customer.id], customer);
-    }
-  };
-
-  const handleSyncDatabase = async () => {
-    try {
-      // Trigger a refetch of all customer data
-      await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      
-      toast({
-        title: "Sync Complete",
-        description: "Customer data has been synced successfully.",
-        variant: "success",
-      });
-    } catch (error) {
-      toast({
-        title: "Sync Failed",
-        description: "Failed to sync customer data. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Get recent customers
+  const recentCustomers = [...(customers || [])]
+    .sort((a, b) => b.id - a.id)
+    .slice(0, 5);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Customer Search Section */}
+      {/* Dashboard Header */}
       <div className="mb-8">
         <div className="md:flex md:items-center md:justify-between">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold text-slate-800">Customer Management</h1>
-            <p className="mt-1 text-sm text-slate-500">Search, view, and manage customer information</p>
-          </div>
-          <div className="mt-4 flex md:mt-0 md:ml-4">
-            <button
-              type="button"
-              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              onClick={() => setIsAddCustomerModalOpen(true)}
-            >
-              <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <line x1="19" y1="8" x2="19" y2="14" />
-                <line x1="16" y1="11" x2="22" y2="11" />
-              </svg>
-              Add Customer
-            </button>
+            <h1 className="text-2xl font-semibold text-slate-800">Dashboard</h1>
+            <p className="mt-1 text-sm text-slate-500">Welcome to your Invoice Manager dashboard</p>
           </div>
         </div>
-
-        <CustomerSearch
-          customers={customers}
-          isLoading={isLoadingCustomers}
-          onCustomerSelect={handleCustomerSelect}
-          onCustomerSearch={handleCustomerSearch}
-          onSyncDatabase={handleSyncDatabase}
-        />
       </div>
 
-      {/* Customer Details */}
-      {selectedCustomerId ? (
-        isLoadingSelectedCustomer ? (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8 p-6">
-            <Skeleton className="h-8 w-1/3 mb-4" />
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <Skeleton className="h-6 w-1/2 mb-2" />
-                <Skeleton className="h-6 w-3/4 mb-6" />
-                <Skeleton className="h-6 w-1/2 mb-2" />
-                <Skeleton className="h-6 w-3/4 mb-6" />
-                <Skeleton className="h-6 w-1/2 mb-2" />
-                <Skeleton className="h-6 w-3/4" />
-              </div>
-              <div>
-                <Skeleton className="h-6 w-1/2 mb-2" />
-                <Skeleton className="h-20 w-full mb-2" />
-                <Skeleton className="h-20 w-full" />
-              </div>
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Total Customers</CardTitle>
+            <CardDescription>All registered customers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary-600">
+              {isLoadingCustomers ? "..." : totalCustomers}
             </div>
-          </div>
-        ) : (
-          selectedCustomer && (
-            <CustomerDetails
-              customer={selectedCustomer}
-              onEditPhoneNumber={() => setIsAddPhoneModalOpen(true)}
-              onAddPhoneNumber={() => setIsAddPhoneModalOpen(true)}
-            />
-          )
-        )
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="text-center py-8">
-            <svg 
-              className="mx-auto h-12 w-12 text-gray-400" 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor" 
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No customer selected</h3>
-            <p className="mt-1 text-sm text-gray-500">Select a customer from the dropdown or search for one.</p>
-            <div className="mt-6">
-              <button
-                type="button"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                onClick={() => setIsAddCustomerModalOpen(true)}
-              >
-                <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" y1="8" x2="19" y2="14" />
-                  <line x1="16" y1="11" x2="22" y2="11" />
-                </svg>
-                Add Customer
-              </button>
+            <Link href="/customers">
+              <span className="text-sm text-primary-600 hover:underline cursor-pointer mt-2 inline-block">
+                View all customers →
+              </span>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Total Services</CardTitle>
+            <CardDescription>Services provided to customers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary-600">
+              {isLoadingCustomers ? "..." : totalServices}
             </div>
-          </div>
-        </div>
-      )}
+            <Link href="/customers">
+              <span className="text-sm text-primary-600 hover:underline cursor-pointer mt-2 inline-block">
+                Manage services →
+              </span>
+            </Link>
+          </CardContent>
+        </Card>
 
-      {/* Services Table */}
-      {selectedCustomerId && selectedCustomer && (
-        <ServicesTable
-          customerId={selectedCustomerId}
-          services={selectedCustomer.services}
-          onAddService={() => setIsAddServiceModalOpen(true)}
-        />
-      )}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
+            <CardDescription>Common tasks</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Link href="/customers">
+                <span className="block text-sm text-primary-600 hover:underline cursor-pointer">
+                  Add new customer
+                </span>
+              </Link>
+              <Link href="/settings">
+                <span className="block text-sm text-primary-600 hover:underline cursor-pointer">
+                  Configure Google Sheets
+                </span>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Modals */}
-      <AddCustomerModal
-        isOpen={isAddCustomerModalOpen}
-        onClose={() => setIsAddCustomerModalOpen(false)}
-      />
-      
-      {selectedCustomerId && (
-        <>
-          <AddPhoneModal
-            isOpen={isAddPhoneModalOpen}
-            onClose={() => setIsAddPhoneModalOpen(false)}
-            customerId={selectedCustomerId}
-          />
-          
-          <AddServiceModal
-            isOpen={isAddServiceModalOpen}
-            onClose={() => setIsAddServiceModalOpen(false)}
-            customerId={selectedCustomerId}
-          />
-        </>
-      )}
+      {/* Recent Customers */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Recent Customers</CardTitle>
+          <CardDescription>The most recently added customers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingCustomers ? (
+            <p>Loading recent customers...</p>
+          ) : recentCustomers.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium">ID</th>
+                    <th className="text-left py-3 px-4 font-medium">Name</th>
+                    <th className="text-left py-3 px-4 font-medium">Responsible</th>
+                    <th className="text-left py-3 px-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentCustomers.map((customer) => (
+                    <tr key={customer.id} className="border-b hover:bg-slate-50">
+                      <td className="py-3 px-4">{customer.id}</td>
+                      <td className="py-3 px-4">{customer.name}</td>
+                      <td className="py-3 px-4">{customer.responsible || "-"}</td>
+                      <td className="py-3 px-4">
+                        <Link href={`/customers?id=${customer.id}`}>
+                          <span className="text-primary-600 hover:underline cursor-pointer">View</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-slate-500">No customers found</p>
+              <Link href="/customers">
+                <button
+                  type="button"
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                >
+                  <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="19" y1="8" x2="19" y2="14" />
+                    <line x1="16" y1="11" x2="22" y2="11" />
+                  </svg>
+                  Add Customer
+                </button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
